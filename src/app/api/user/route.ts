@@ -226,3 +226,48 @@ export async function PUT(request: Request) {
     });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    await authWrapper(
+      request,
+      async function (request: Request, userId: string) {
+        console.log(request.url);
+
+        await connectDb();
+        const findUserAndDelete = await Users.findByIdAndDelete(userId);
+
+        const cookieToken = serialize("userToken", "", {
+          httpOnly: true,
+          path: "/",
+          sameSite: "strict",
+          secure: true,
+          maxAge: 0,
+          expires: new Date(Date.now()),
+        });
+        if (!findUserAndDelete) {
+          return NextResponse.json(
+            new ApiReponse(404, "Email not found", {}, false),
+            { status: 404, headers: { "Set-Cookie": cookieToken } }
+          );
+        }
+
+        return NextResponse.json(
+          new ApiReponse(200, "Deleted successfully", {}, true),
+          { status: 200, headers: { "Set-Cookie": cookieToken } }
+        );
+      }
+    );
+  } catch (error: any) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
+        status: 500,
+      });
+    }
+    console.error(error.message);
+    return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
+      status: 500,
+    });
+  }
+}
