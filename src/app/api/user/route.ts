@@ -2,7 +2,7 @@ import { Users } from "@/models/usermodel";
 import { ApiReponse } from "@/utils/apiResponse";
 import { validateEncryptPassword } from "@/utils/bcryptjs";
 import { generateToken } from "@/utils/jwt";
-import { loginSchema } from "@/utils/validation";
+import { loginSchema, updateSchema } from "@/utils/validation";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { serialize } from "cookie";
@@ -144,6 +144,82 @@ export async function POST(request: Request) {
       });
     }
 
+    console.error(error.message);
+    return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
+      status: 500,
+    });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await authWrapper(
+      request,
+      async function (request: Request, userId: string) {
+        const body = await request.json();
+        const updateData = await updateSchema.parseAsync(body);
+
+        await connectDb();
+        const updateAndFindUser = await Users.findByIdAndUpdate(
+          userId,
+          {
+            monthlyIncome: updateData.monthlyIncome,
+            profilePic: updateData.profilePic,
+          },
+          { new: true }
+        );
+
+        if (!updateAndFindUser) {
+          const cookieToken = serialize("userToken", "", {
+            httpOnly: true,
+            path: "/",
+            sameSite: "strict",
+            secure: true,
+            maxAge: 0,
+            expires: new Date(Date.now()),
+          });
+          return NextResponse.json(
+            new ApiReponse(404, "Email not found", {}, false),
+            { status: 404, headers: { "Set-Cookie": cookieToken } }
+          );
+        }
+
+        return NextResponse.json(
+          new ApiReponse(
+            200,
+            "updated successfully",
+            {
+              user: {
+                firstName: updateAndFindUser.firstName,
+                lastName: updateAndFindUser.lastName,
+                email: updateAndFindUser.email,
+                profilePic: updateAndFindUser.profilePic,
+                isEmailVerified: updateAndFindUser.isEmailVerified,
+                monthlyIncome: updateAndFindUser.monthlyIncome,
+              },
+            },
+            true
+          ),
+          {
+            status: 200,
+          }
+        );
+      }
+    );
+  } catch (error: any) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
+        status: 500,
+      });
+    }
+
+    if (error instanceof ZodError) {
+      console.error(error.message);
+      return NextResponse.json(new ApiReponse(400, error.message, {}, false), {
+        status: 400,
+      });
+    }
     console.error(error.message);
     return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
       status: 500,
