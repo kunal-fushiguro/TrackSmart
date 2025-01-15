@@ -4,11 +4,11 @@ import { ApiReponse } from "@/utils/apiResponse";
 import { registerSchema } from "@/utils/validation";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { v4 } from "uuid";
 import { generateEncryptedPassword } from "@/utils/bcryptjs";
 import { Resend } from "resend";
-import { RESEND_EMAIL_KEY } from "@/utils/env";
+import { JWT_TOKEN_EMAIL, RESEND_EMAIL_KEY } from "@/utils/env";
 import ConfirmationEmail from "@/components/EmailTemplate";
+import jwt from "jsonwebtoken";
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +38,10 @@ export async function POST(request: Request) {
     }
 
     // register the user
-    const emailConfrimString = v4();
+    const emailConfrimString = jwt.sign(
+      { email: registerData.email },
+      String(JWT_TOKEN_EMAIL)
+    );
     const hashedPassword = generateEncryptedPassword(registerData.password);
     await Users.create({
       firstName: registerData.firstName,
@@ -47,9 +50,8 @@ export async function POST(request: Request) {
       password: hashedPassword,
       emailConfrimationCode: emailConfrimString,
     });
-
-    const protocol = request.url?.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${request.url}`;
+    const parsedUrl = new URL(request.url);
+    const baseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
     const confirmationUrl = `${baseUrl}/api/user/confirmemail/${emailConfrimString}`;
 
     const resendEmail = new Resend(RESEND_EMAIL_KEY);
