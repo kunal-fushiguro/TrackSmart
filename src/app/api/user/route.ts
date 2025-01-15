@@ -6,12 +6,75 @@ import { loginSchema } from "@/utils/validation";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { serialize } from "cookie";
+import { connectDb } from "@/lib/db";
+import { authWrapper } from "@/utils/authWrapper";
+
+export async function GET(request: Request) {
+  try {
+    await authWrapper(
+      request,
+      async function (request: Request, userId: string) {
+        console.log(request.url);
+        await connectDb();
+        const userExistedOrNot = await Users.findById(userId);
+
+        if (!userExistedOrNot) {
+          const cookieToken = serialize("userToken", "", {
+            httpOnly: true,
+            path: "/",
+            sameSite: "strict",
+            secure: true,
+            maxAge: 0,
+            expires: new Date(Date.now()),
+          });
+          return NextResponse.json(
+            new ApiReponse(404, "User not found.", {}, false),
+            { status: 404, headers: { "Set-Cookie": cookieToken } }
+          );
+        }
+
+        return NextResponse.json(
+          new ApiReponse(
+            200,
+            "Login successfully",
+            {
+              user: {
+                firstName: userExistedOrNot.firstName,
+                lastName: userExistedOrNot.lastName,
+                email: userExistedOrNot.email,
+                profilePic: userExistedOrNot.profilePic,
+                isEmailVerified: userExistedOrNot.isEmailVerified,
+                monthlyIncome: userExistedOrNot.monthlyIncome,
+              },
+            },
+            true
+          ),
+          {
+            status: 200,
+          }
+        );
+      }
+    );
+  } catch (error: any) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
+        status: 500,
+      });
+    }
+    console.error(error.message);
+    return NextResponse.json(new ApiReponse(500, error.message, {}, false), {
+      status: 500,
+    });
+  }
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const loginData = await loginSchema.parseAsync(body);
 
+    await connectDb();
     const findUserWithEmail = await Users.findOne({ email: loginData.email });
 
     if (!findUserWithEmail) {

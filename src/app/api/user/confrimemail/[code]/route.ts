@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_TOKEN_EMAIL } from "@/utils/env";
 import { Users } from "@/models/usermodel";
+import { connectDb } from "@/lib/db";
 
 export async function POST({ params }: { params: { code: string } }) {
   try {
@@ -18,6 +19,7 @@ export async function POST({ params }: { params: { code: string } }) {
     }
 
     const email = (data as JwtPayload).email;
+    await connectDb();
     const findUserAndVerifyEmail = await Users.findByIdAndUpdate(
       {
         email: email,

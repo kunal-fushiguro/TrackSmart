@@ -29,4 +29,11 @@ const loginSchema = z.object({
     .min(6, { message: "Password must be at least 6 characters long." }),
 });
 
-export { loginSchema, registerSchema };
+const updateSchema = z.object({
+  profilePic: z
+    .string({ required_error: "Profile picture url is required." })
+    .url({ message: "Profile picture url must be valid." }),
+  monthlyIncome: z.number({ required_error: "Income is required" }),
+});
+
+export { loginSchema, registerSchema, updateSchema };
