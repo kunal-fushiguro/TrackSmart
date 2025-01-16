@@ -49,10 +49,37 @@ const resetPasswordSchema = z.object({
     .min(6, { message: "Password must be at least 6 characters long." }),
 });
 
+const goalsSchema = z.object({
+  FoodAndDrinks: z.number({ required_error: "All fields are required." }),
+  Groceries: z.number({ required_error: "All fields are required." }),
+  Shopping: z.number({ required_error: "All fields are required." }),
+  Transport: z.number({ required_error: "All fields are required." }),
+  Entertainment: z.number({ required_error: "All fields are required." }),
+  Utilities: z.number({ required_error: "All fields are required." }),
+  HealthAndFitness: z.number({ required_error: "All fields are required." }),
+  Home: z.number({ required_error: "All fields are required." }),
+  Savings: z.number({ required_error: "All fields are required." }),
+  Others: z.number({ required_error: "All fields are required." }),
+});
+
 export {
   loginSchema,
   registerSchema,
   updateSchema,
   emailSchema,
   resetPasswordSchema,
+  goalsSchema,
 };
+
+[
+  "Food & Drinks",
+  "Groceries",
+  "Shopping",
+  "Transport",
+  "Entertainment",
+  "Utilities",
+  "Health & Fitness",
+  "Home",
+  "Savings",
+  "others",
+];
