@@ -36,4 +36,23 @@ const updateSchema = z.object({
   monthlyIncome: z.number({ required_error: "Income is required" }),
 });
 
-export { loginSchema, registerSchema, updateSchema };
+const emailSchema = z.object({
+  email: z
+    .string({ message: "Email is required" })
+    .email({ message: "Email is not valid" }),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string({ required_error: "token is required." }),
+  newPassword: z
+    .string({ required_error: "Password is required." })
+    .min(6, { message: "Password must be at least 6 characters long." }),
+});
+
+export {
+  loginSchema,
+  registerSchema,
+  updateSchema,
+  emailSchema,
+  resetPasswordSchema,
+};

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     });
     const parsedUrl = new URL(request.url);
     const baseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
-    const confirmationUrl = `${baseUrl}/api/user/confirmemail/${emailConfrimString}`;
+    const confirmationUrl = `${baseUrl}/user/confirmemail/${emailConfrimString}`;
 
     const resendEmail = new Resend(RESEND_EMAIL_KEY);
     const { error } = await resendEmail.emails.send({
