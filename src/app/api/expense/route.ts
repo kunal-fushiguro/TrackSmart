@@ -1,9 +1,8 @@
-import { connectDb } from "@/lib/db";
-import { Goals } from "@/models/goalmodel";
+import { Expense } from "@/models/expensemodel";
 import { Users } from "@/models/usermodel";
 import { ApiReponse } from "@/utils/apiResponse";
 import { authWrapper } from "@/utils/authWrapper";
-import { goalsSchema } from "@/utils/validation";
+import { expenseSchema } from "@/utils/validation";
 import { serialize } from "cookie";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
@@ -14,9 +13,8 @@ export async function POST(request: Request) {
       request,
       async function (request: Request, userId: string) {
         const body = await request.json();
-        const data = await goalsSchema.parseAsync(body);
+        const data = await expenseSchema.parseAsync(body);
 
-        await connectDb();
         const findUserById = await Users.findById(userId);
         if (!findUserById) {
           const cookieToken = serialize("userToken", "", {
@@ -33,37 +31,33 @@ export async function POST(request: Request) {
           );
         }
 
-        const createGoals = await Goals.create({
+        const createExpense = await Expense.create({
           userId: findUserById._id,
-          goals: data,
+          typeOfExpense: data.typeOfExpense,
+          amount: data.amount,
+          date: data.date,
+          category: data.category,
+          description: data.description,
         });
 
-        const users = await Users.findByIdAndUpdate(
+        await Users.findByIdAndUpdate(
           findUserById._id,
-          { goal: createGoals._id },
+          {
+            $push: {
+              expense: createExpense._id,
+            },
+          },
           { new: true }
-        ).populate("goal");
+        );
 
         return NextResponse.json(
           new ApiReponse(
-            201,
-            "Goals created.",
-            {
-              user: [
-                {
-                  firstName: users.firstName,
-                  lastName: users.lastName,
-                  email: users.email,
-                  profilePic: users.profilePic,
-                  isEmailVerified: users.isEmailVerified,
-                  monthlyIncome: users.monthlyIncome,
-                  goal: users.goal,
-                },
-              ],
-            },
+            200,
+            "Expense created.",
+            { expense: createExpense },
             true
           ),
-          { status: 201 }
+          { status: 200 }
         );
       }
     );
@@ -95,18 +89,32 @@ export async function PUT(request: Request) {
       request,
       async function (request: Request, userId: string) {
         const body = await request.json();
-        const data = await goalsSchema.parseAsync(body);
+        const data = await expenseSchema.parseAsync(body);
 
-        await connectDb();
-        const findGoalsById = await Goals.findOneAndUpdate(
-          { userId: userId },
-          { goals: data },
-          { new: true }
+        const findUserById = await Users.findById(userId);
+        if (!findUserById) {
+          const cookieToken = serialize("userToken", "", {
+            httpOnly: true,
+            path: "/",
+            sameSite: "strict",
+            secure: true,
+            maxAge: 0,
+            expires: new Date(Date.now()),
+          });
+          return NextResponse.json(
+            new ApiReponse(404, "User not found", {}, false),
+            { status: 404, headers: { "Set-Cookie": cookieToken } }
+          );
+        }
+
+        const updateExpense = await Expense.findOneAndUpdate(
+          { userId: findUserById._id },
+          { userId: findUserById._id, ...data }
         );
 
-        if (!findGoalsById) {
+        if (!updateExpense) {
           return NextResponse.json(
-            new ApiReponse(404, "Goals not found by userId", {}, false),
+            new ApiReponse(404, "Expense not found", {}, false),
             { status: 404 }
           );
         }
@@ -114,8 +122,8 @@ export async function PUT(request: Request) {
         return NextResponse.json(
           new ApiReponse(
             200,
-            "Goals updated successfully",
-            { findGoalsById },
+            "Expense Updated successfully",
+            { updateExpense },
             true
           ),
           { status: 200 }
@@ -151,18 +159,35 @@ export async function DELETE(request: Request) {
       async function (request: Request, userId: string) {
         console.log(request.url);
 
-        await connectDb();
-        const findGoalsById = await Goals.findOneAndDelete({ userId: userId });
-
-        if (!findGoalsById) {
+        const findUserById = await Users.findById(userId);
+        if (!findUserById) {
+          const cookieToken = serialize("userToken", "", {
+            httpOnly: true,
+            path: "/",
+            sameSite: "strict",
+            secure: true,
+            maxAge: 0,
+            expires: new Date(Date.now()),
+          });
           return NextResponse.json(
-            new ApiReponse(404, "Goals not found by userId", {}, false),
+            new ApiReponse(404, "User not found", {}, false),
+            { status: 404, headers: { "Set-Cookie": cookieToken } }
+          );
+        }
+
+        const updateExpense = await Expense.findOneAndDelete({
+          userId: findUserById._id,
+        });
+
+        if (!updateExpense) {
+          return NextResponse.json(
+            new ApiReponse(404, "Expense not found", {}, false),
             { status: 404 }
           );
         }
 
         return NextResponse.json(
-          new ApiReponse(200, "Goals Deleted successfully", {}, true),
+          new ApiReponse(200, "Expense deleted successfully", {}, true),
           { status: 200 }
         );
       }

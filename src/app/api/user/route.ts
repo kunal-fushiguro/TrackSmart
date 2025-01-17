@@ -16,7 +16,10 @@ export async function GET(request: Request) {
       async function (request: Request, userId: string) {
         console.log(request.url);
         await connectDb();
-        const userExistedOrNot = await Users.findById(userId);
+        const userExistedOrNot = await Users.findById(userId).populate(
+          "goal",
+          "expense"
+        );
 
         if (!userExistedOrNot) {
           const cookieToken = serialize("userToken", "", {
@@ -45,6 +48,8 @@ export async function GET(request: Request) {
                 profilePic: userExistedOrNot.profilePic,
                 isEmailVerified: userExistedOrNot.isEmailVerified,
                 monthlyIncome: userExistedOrNot.monthlyIncome,
+                goal: userExistedOrNot.goal,
+                expense: userExistedOrNot.expense,
               },
             },
             true

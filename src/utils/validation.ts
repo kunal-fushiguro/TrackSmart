@@ -62,6 +62,14 @@ const goalsSchema = z.object({
   Others: z.number({ required_error: "All fields are required." }),
 });
 
+const expenseSchema = z.object({
+  typeOfExpense: z.string({ required_error: "All fields are required." }),
+  amount: z.number({ required_error: "All fields are required." }),
+  date: z.date({ required_error: "All fields are required." }),
+  category: z.string({ required_error: "All fields are required." }),
+  description: z.string({ required_error: "All fields are required." }),
+});
+
 export {
   loginSchema,
   registerSchema,
@@ -69,6 +77,7 @@ export {
   emailSchema,
   resetPasswordSchema,
   goalsSchema,
+  expenseSchema,
 };
 
 [
